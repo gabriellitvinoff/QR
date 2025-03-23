@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>🎉 Entrada Fiesta 2025</title>
+  <title id="titulo">🎉 Entrada Fiesta</title>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <style>
     body {
@@ -10,7 +10,7 @@
       padding: 20px;
       max-width: 700px;
       margin: auto;
-      background: linear-gradient(to right, #2e003e, #a379c9); /* Fondo lila con negro */
+      background: linear-gradient(to right, #2e003e, #a379c9);
       color: #fff;
     }
     h2 {
@@ -18,27 +18,66 @@
       font-size: 28px;
       margin-bottom: 20px;
     }
-    input, button {
+    .input-group {
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+    }
+    .input-group input {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 10px 0 0 10px;
+      border: 1px solid #ccc;
+    }
+    .input-group button {
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 0 10px 10px 0;
+      border: 1px solid #ccc;
+      background-color: red;
+      color: white;
+      cursor: pointer;
+    }
+    button {
       padding: 12px;
       margin: 10px 0;
       width: 100%;
       font-size: 16px;
       border-radius: 10px;
-      border: 1px solid #ccc;
-    }
-    button {
+      border: none;
       background-color: #25d366;
       color: white;
-      border: none;
-      cursor: pointer;
       font-weight: bold;
+      cursor: pointer;
     }
     button:hover {
       background-color: #1da851;
     }
-    #qr {
+    #qr-container {
       margin-top: 20px;
       text-align: center;
+      position: relative;
+      animation: fadeIn 1s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    #qr-background {
+      width: 300px;
+      height: 300px;
+      background: url('https://tuusuario.github.io/QR/imagen.png') no-repeat center center;
+      background-size: cover;
+      margin: auto;
+      position: relative;
+    }
+    #canvasQR {
+      width: 140px;
+      height: 140px;
+      position: absolute;
+      top: 80px;
+      left: 80px;
     }
     table {
       width: 100%;
@@ -70,21 +109,41 @@
       font-size: 18px;
       margin-top: 10px;
     }
+    .boton-borrar {
+      background: none;
+      border: none;
+      color: red;
+      font-size: 18px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
-  <h2>🎟️ Crear entrada para la fiesta 2025</h2>
+  <h2 id="eventoTitulo">🎟️ Crear entrada para la fiesta</h2>
 
-  <input type="text" id="nombre" placeholder="Nombre" />
-  <input type="text" id="apellido" placeholder="Apellido" />
+  <div class="input-group">
+    <input type="text" id="nombre" placeholder="Nombre" />
+    <button onclick="document.getElementById('nombre').value = ''">❌</button>
+  </div>
+  <div class="input-group">
+    <input type="text" id="apellido" placeholder="Apellido" />
+    <button onclick="document.getElementById('apellido').value = ''">❌</button>
+  </div>
+
   <button onclick="generarQR()">✨ Generar entrada</button>
 
-  <div id="qr"></div>
+  <div id="qr-container">
+    <div id="qr-background">
+      <canvas id="canvasQR"></canvas>
+    </div>
+  </div>
+
   <div id="info"></div>
   <button id="btnWhatsapp" style="display:none;" onclick="compartirWhatsApp()">📲 Enviar por WhatsApp</button>
 
   <div id="totalInvitados"></div>
+  <button onclick="exportarCSV()">⬇️ Exportar a Excel</button>
 
   <h3>📋 Lista de invitados</h3>
   <table id="tablaInvitados">
@@ -93,11 +152,131 @@
         <th>Nombre</th>
         <th>Apellido</th>
         <th>ID</th>
+        <th>Token</th>
+        <th>Usado</th>
         <th>Asistió</th>
+        <th>🗑️</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
   <script>
-    // Cargar
+    let invitados = JSON.parse(localStorage.getItem('invitados')) || [];
+
+    window.onload = function () {
+      document.title = "🎉 Entrada QR - Tu Evento";
+      document.getElementById("eventoTitulo").innerText = "🎟️ Entrada QR para Tu Evento Especial";
+      document.querySelector("#tablaInvitados tbody").innerHTML = "";
+      invitados.forEach(i => agregarAFila(i));
+      actualizarContador();
+    };
+
+    function generarID() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let id = '';
+      for (let i = 0; i < 6; i++) {
+        id += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return id;
+    }
+
+    function generarToken() {
+      return Math.random().toString(36).substring(2, 10);
+    }
+
+    function generarQR() {
+      const nombre = document.getElementById("nombre").value.trim();
+      const apellido = document.getElementById("apellido").value.trim();
+      if (!nombre.match(/^[A-Za-zÁÉÍÓÚÑáéíóúñ ]+$/) || !apellido.match(/^[A-Za-zÁÉÍÓÚÑáéíóúñ ]+$/)) {
+        alert("Por favor ingresá un nombre y apellido válidos.");
+        return;
+      }
+
+      const id = generarID();
+      const token = generarToken();
+      const timestamp = new Date().toISOString();
+      const usado = false;
+      const datos = `ID: ${id}\nToken: ${token}`;
+
+      QRCode.toCanvas(document.getElementById("canvasQR"), datos, function (error) {
+        if (error) {
+          console.error("Error generando el código QR", error);
+          alert("Hubo un problema al generar el código QR.");
+        }
+      });
+
+      document.getElementById("info").innerHTML = `✅ Entrada creada con ID: ${id}`;
+      document.getElementById("btnWhatsapp").style.display = "block";
+
+      const nuevo = { nombre, apellido, id, token, timestamp, usado };
+      invitados.push(nuevo);
+      localStorage.setItem('invitados', JSON.stringify(invitados));
+      agregarAFila(nuevo);
+      actualizarContador();
+    }
+
+    function agregarAFila(inv) {
+      const tabla = document.querySelector("#tablaInvitados tbody");
+      const fila = tabla.insertRow();
+      fila.insertCell(0).innerText = inv.nombre;
+      fila.insertCell(1).innerText = inv.apellido;
+      fila.insertCell(2).innerText = inv.id;
+      fila.insertCell(3).innerText = inv.token;
+      fila.insertCell(4).innerText = inv.usado ? "✔️" : "❌";
+
+      const celdaAsistio = fila.insertCell(5);
+      const btn = document.createElement("button");
+      btn.textContent = "✔️ Marcar";
+      btn.onclick = function () {
+        fila.classList.toggle("asistio");
+      };
+      celdaAsistio.appendChild(btn);
+
+      const celdaBorrar = fila.insertCell(6);
+      const btnBorrar = document.createElement("button");
+      btnBorrar.classList.add("boton-borrar");
+      btnBorrar.innerHTML = "🗑️";
+      btnBorrar.onclick = function () {
+        fila.remove();
+        invitados = invitados.filter(i => i.id !== inv.id);
+        localStorage.setItem('invitados', JSON.stringify(invitados));
+        actualizarContador();
+      };
+      celdaBorrar.appendChild(btnBorrar);
+    }
+
+    function actualizarContador() {
+      document.getElementById("totalInvitados").innerText = `🔢 Total de entradas: ${invitados.length}`;
+    }
+
+    function compartirWhatsApp() {
+      const ultimo = invitados[invitados.length - 1];
+      const mensaje = `🎉 Entrada para la fiesta\nNombre: ${ultimo.nombre}\nApellido: ${ultimo.apellido}\nID: ${ultimo.id}\nToken: ${ultimo.token}`;
+      const link = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+      window.open(link, '_blank');
+    }
+
+    function exportarCSV() {
+      if (invitados.length === 0) {
+        alert("No hay invitados para exportar.");
+        return;
+      }
+
+      const encabezado = ["Nombre", "Apellido", "ID", "Token", "Fecha", "Usado"];
+      const filas = invitados.map(i => [i.nombre, i.apellido, i.id, i.token, new Date(i.timestamp).toLocaleString(), i.usado]);
+
+      const csvContenido = [encabezado, ...filas].map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvContenido], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "invitados_fiesta.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  </script>
+
+</body>
+</html>
