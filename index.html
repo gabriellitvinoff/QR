@@ -2,53 +2,89 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Entradas con QR</title>
+  <title>🎉 Entrada Fiesta 2025</title>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       padding: 20px;
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
-      background-color: #f2f2f2;
+      background: linear-gradient(to right, #2e003e, #a379c9); /* Fondo lila con negro */
+      color: #fff;
+    }
+    h2 {
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 20px;
     }
     input, button {
-      padding: 10px;
+      padding: 12px;
       margin: 10px 0;
       width: 100%;
       font-size: 16px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #25d366;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #1da851;
+    }
+    #qr {
+      margin-top: 20px;
+      text-align: center;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin-top: 30px;
+      background-color: white;
+      color: black;
     }
     th, td {
-      padding: 8px;
-      border: 1px solid #ccc;
+      padding: 10px;
+      border: 1px solid #ddd;
       text-align: center;
+    }
+    th {
+      background-color: #6b2d7d;
+      color: white;
     }
     .asistio {
-      background-color: lightgreen;
+      background-color: #c4f0c5;
       text-decoration: line-through;
     }
-    #qr {
-      margin: 20px auto;
+    #info {
       text-align: center;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    #totalInvitados {
+      text-align: center;
+      font-size: 18px;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
 
-  <h2>🎟️ Crear entrada para la fiesta</h2>
+  <h2>🎟️ Crear entrada para la fiesta 2025</h2>
 
   <input type="text" id="nombre" placeholder="Nombre" />
   <input type="text" id="apellido" placeholder="Apellido" />
-  <button onclick="generarQR()">Generar entrada</button>
+  <button onclick="generarQR()">✨ Generar entrada</button>
 
   <div id="qr"></div>
   <div id="info"></div>
   <button id="btnWhatsapp" style="display:none;" onclick="compartirWhatsApp()">📲 Enviar por WhatsApp</button>
+
+  <div id="totalInvitados"></div>
 
   <h3>📋 Lista de invitados</h3>
   <table id="tablaInvitados">
@@ -64,65 +100,4 @@
   </table>
 
   <script>
-    let invitados = [];
-
-    function generarID() {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let id = '';
-      for (let i = 0; i < 6; i++) {
-        id += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return id;
-    }
-
-    function generarQR() {
-      const nombre = document.getElementById("nombre").value.trim();
-      const apellido = document.getElementById("apellido").value.trim();
-      if (!nombre || !apellido) {
-        alert("Por favor ingresá nombre y apellido.");
-        return;
-      }
-
-      const id = generarID();
-      const datos = `Nombre: ${nombre}\nApellido: ${apellido}\nID: ${id}`;
-      const datosLink = encodeURIComponent(`Nombre: ${nombre}\nApellido: ${apellido}\nID: ${id}`);
-
-      // Mostrar QR
-      QRCode.toCanvas(document.createElement('canvas'), datos, function (err, canvas) {
-        const qrDiv = document.getElementById("qr");
-        qrDiv.innerHTML = "";
-        qrDiv.appendChild(canvas);
-      });
-
-      document.getElementById("info").innerHTML = `<p><strong>ID:</strong> ${id}</p>`;
-      document.getElementById("btnWhatsapp").style.display = "block";
-
-      // Guardar invitado en tabla
-      const tabla = document.querySelector("#tablaInvitados tbody");
-      const fila = tabla.insertRow();
-      fila.insertCell(0).innerText = nombre;
-      fila.insertCell(1).innerText = apellido;
-      fila.insertCell(2).innerText = id;
-
-      const celdaAsistio = fila.insertCell(3);
-      const btn = document.createElement("button");
-      btn.textContent = "Marcar";
-      btn.onclick = function () {
-        fila.classList.toggle("asistio");
-      };
-      celdaAsistio.appendChild(btn);
-
-      // Guardar invitado en lista
-      invitados.push({ nombre, apellido, id, datosLink });
-    }
-
-    function compartirWhatsApp() {
-      const ultimo = invitados[invitados.length - 1];
-      const mensaje = `¡Hola! Tu entrada para la fiesta:\nNombre: ${ultimo.nombre}\nApellido: ${ultimo.apellido}\nID: ${ultimo.id}`;
-      const link = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
-      window.open(link, '_blank');
-    }
-  </script>
-
-</body>
-</html>
+    // Cargar
